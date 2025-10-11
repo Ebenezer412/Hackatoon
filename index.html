@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TerraViva: Preservar o solo é preservar a vida.</title>
+    
+    <!-- Meta tags SEO -->
+    <meta name="description" content="TerraViva: Plataforma educativa sobre preservação do solo e combate à degradação ambiental. Conheça causas, consequências e soluções sustentáveis.">
+    <meta name="keywords" content="degradação do solo, preservação ambiental, sustentabilidade, agricultura, desertificação, erosão">
+    <meta name="author" content="TerraViva">
+    <meta name="robots" content="index, follow">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="TerraViva: Preservar o solo é preservar a vida">
+    <meta property="og:description" content="Conheça os impactos da degradação do solo e soluções sustentáveis para preservar nosso planeta">
+    <meta property="og:url" content="https://terraviva.com">
+    <meta property="og:site_name" content="TerraViva">
+    
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="TerraViva: Preservar o solo é preservar a vida">
+    <meta name="twitter:description" content="Conheça os impactos da degradação do solo e soluções sustentáveis">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌱</text></svg>">
+    <!-- Tailwind CSS CDN para design responsivo e moderno -->
+    <script src="https://cdn.tailwindcss.com/3.4.0"></script>
+    <!-- Fonte Inter para melhor legibilidade -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" crossorigin>
+    
+    <!-- Estilos personalizados -->
+    <link rel="stylesheet" href="css/styles.css">
+    
+    <!-- Bibliotecas para Gráficos e Mapas -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js" crossorigin></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin></script>
+    
+    <!-- Scripts JavaScript -->
+    <script src="js/charts.js"></script>
+    <script src="js/map.js"></script>
+    <script src="js/main.js"></script>
+
+    <script>
+        // Configuração do Tailwind com cores temáticas
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'terra-verde': '#4CAF50', // Verde vibrante
+                        'terra-marrom': '#795548', // Marrom da terra
+                        'fundo-claro': '#F8F9FA', // Fundo claro
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-fundo-claro font-sans antialiased">
+
+    <!-- Cabeçalho Fixo e Navegação -->
+    <header class="sticky top-0 z-50 bg-white shadow-lg" role="banner">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Logotipo e Slogan -->
+                <div class="flex-shrink-0">
+                    <button onclick="showPage('home')" class="text-2xl font-bold text-terra-marrom hover:text-terra-verde transition duration-300" aria-label="Ir para página inicial">
+                        TerraViva
+                    </button>
+                    <p class="text-xs text-gray-500 hidden sm:block">Preservar o solo é preservar a vida.</p>
+                </div>
+                
+                <!-- Menu de Navegação -->
+                <nav class="flex space-x-1 sm:space-x-4" role="navigation" aria-label="Menu principal">
+                    <button onclick="showPage('home')" class="nav-link active text-gray-600 hover:text-terra-verde px-3 py-2 text-sm font-medium transition duration-300" aria-current="page">Início</button>
+                    <button onclick="showPage('educacao')" class="nav-link text-gray-600 hover:text-terra-verde px-3 py-2 text-sm font-medium transition duration-300">Entenda</button>
+                    <button onclick="showPage('dados')" class="nav-link text-gray-600 hover:text-terra-verde px-3 py-2 text-sm font-medium transition duration-300">Dados</button>
+                    <button onclick="showPage('mapa')" class="nav-link text-gray-600 hover:text-terra-verde px-3 py-2 text-sm font-medium transition duration-300 hidden sm:block">Mapa</button>
+                    <button onclick="showPage('acao')" class="nav-link text-gray-600 hover:text-terra-verde px-3 py-2 text-sm font-medium transition duration-300 hidden sm:block">Ação</button>
+                    <button onclick="showPage('contribuir')" class="nav-link bg-terra-verde text-white rounded-full hover:bg-green-600 px-3 py-1 text-sm font-medium transition duration-300 ml-4">Contribuir</button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Conteúdo Principal - Centralizador para todas as páginas -->
+    <main class="max-w-7xl mx-auto py-8 sm:py-12 px-4 sm:px-6 lg:px-8" role="main">
+
+        <!-- 1. PÁGINA INÍCIO (HOME) -->
+        <div id="home" class="page-content">
+            <div class="text-center bg-gray-100 rounded-2xl shadow-xl p-8 sm:p-16 mb-12" style="background-image: url('images/Hero-bg.png'); background-size: cover; background-position: center;">
+                <h1 class="text-4xl sm:text-6xl font-extrabold text-white leading-tight drop-shadow-lg">
+                    TerraViva
+                </h1>
+                <p class="mt-4 text-xl sm:text-2xl text-white font-medium drop-shadow-md">
+                    Preservar o solo é preservar a vida.
+                </p>
+                <button onclick="showPage('educacao')" class="mt-8 bg-terra-verde hover:bg-green-600 text-white font-bold py-3 px-8 rounded-full shadow-lg transition duration-300 transform hover:scale-105">
+                    O que é a Degradação do Solo?
+                </button>
+            </div>
+            
+            <h2 class="text-3xl font-bold text-gray-800 mb-6 border-b-2 border-terra-verde pb-2">O Problema em Números</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 text-center">
+                <!-- Card de Estatística 1 -->
+                <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+                    <p class="text-5xl font-extrabold text-red-500">33%</p>
+                    <p class="mt-2 text-gray-600">Do solo global já está degradado ou severamente degradado.</p>
+                </div>
+                <!-- Card de Estatística 2 -->
+                <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+                    <p class="text-5xl font-extrabold text-terra-marrom">1.5 Bi</p>
+                    <p class="mt-2 text-gray-600">De pessoas são afetadas pela desertificação globalmente.</p>
+                </div>
+                <!-- Card de Estatística 3 -->
+                <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+                    <p class="text-5xl font-extrabold text-blue-500">24 Bi Ton</p>
+                    <p class="mt-2 text-gray-600">De solo fértil é perdido anualmente devido à erosão.</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 2. PÁGINA EDUCAÇÃO (ENTENDA) -->
+        <div id="educacao" class="page-content">
+            <h2 class="text-3xl font-bold text-gray-800 mb-8">📚 Entenda a Degradação do Solo</h2>
+            <div class="bg-white p-6 sm:p-10 rounded-xl shadow-xl">
+                
+                <!-- Menu de Abas para Conteúdo Educacional -->
+                <div class="flex border-b border-gray-200 mb-6 space-x-4 overflow-x-auto" role="tablist" aria-label="Tópicos educacionais">
+                    <button id="tab-causas" onclick="showTopic('causas')" class="tab-button active text-lg font-semibold py-2 px-4 border-b-4 border-terra-verde text-terra-verde transition duration-300" role="tab" aria-selected="true" aria-controls="topic-causas">Causas</button>
+                    <button id="tab-consequencias" onclick="showTopic('consequencias')" class="tab-button text-lg font-semibold py-2 px-4 border-b-4 border-transparent hover:border-gray-300 text-gray-600 transition duration-300" role="tab" aria-selected="false" aria-controls="topic-consequencias">Consequências</button>
+                    <button id="tab-solucoes" onclick="showTopic('solucoes')" class="tab-button text-lg font-semibold py-2 px-4 border-b-4 border-transparent hover:border-gray-300 text-gray-600 transition duration-300" role="tab" aria-selected="false" aria-controls="topic-solucoes">Soluções</button>
+                </div>
+
+                <!-- Conteúdo das Abas -->
+                <div id="topic-causas" class="topic-content" role="tabpanel" aria-labelledby="tab-causas">
+                    <h3 class="text-2xl font-bold text-terra-marrom mb-4">O que a degrada o solo?</h3>
+                    <ul class="list-disc list-inside space-y-3 text-gray-700 ml-4">
+                        <li>**Agricultura Intensiva:** Uso excessivo de agroquímicos e monocultura, esgotando os nutrientes.</li>
+                        <li>**Desmatamento:** A remoção da cobertura vegetal expõe o solo à erosão pelo vento e água.</li>
+                        <li>**Poluição:** Despejo de resíduos industriais ou lixo que contaminam a matéria orgânica.</li>
+                        <li>**Urbanização Desordenada:** Selagem e compactação do solo com construções.</li>
+                    </ul>
+                </div>
+
+                <div id="topic-consequencias" class="topic-content" style="display: none;" role="tabpanel" aria-labelledby="tab-consequencias">
+                    <h3 class="text-2xl font-bold text-terra-marrom mb-4">O Impacto na Vida e no Planeta</h3>
+                    <ul class="list-disc list-inside space-y-3 text-gray-700 ml-4">
+                        <li>**Segurança Alimentar:** Redução drástica da produtividade e qualidade das colheitas.</li>
+                        <li>**Biodiversidade:** Perda de microorganismos e da fauna essencial que vive no solo.</li>
+                        <li>**Escassez de Água:** O solo degradado perde a capacidade de absorver e reter água da chuva.</li>
+                        <li>**Alterações Climáticas:** O solo perde carbono, que é liberado para a atmosfera, acelerando o aquecimento global.</li>
+                    </ul>
+                </div>
+
+                <div id="topic-solucoes" class="topic-content" style="display: none;" role="tabpanel" aria-labelledby="tab-solucoes">
+                    <h3 class="text-2xl font-bold text-terra-marrom mb-4">Caminhos para a Restauração</h3>
+                    <ul class="list-disc list-inside space-y-3 text-gray-700 ml-4">
+                        <li>**Plantio Direto (Sem Cultivo):** Evita a aragem, mantendo a matéria orgânica e a estrutura do solo.</li>
+                        <li>**Agrofloresta:** Integração de árvores e arbustos com culturas agrícolas, imitando ecossistemas naturais.</li>
+                        <li>**Rotação de Culturas:** Alternar diferentes tipos de plantas para regenerar os nutrientes do solo.</li>
+                        <li>**Uso de Tecnologias:** Aplicação de sensores, drones e $\text{IoT}$ (Internet das Coisas) para otimizar o uso de água e fertilizantes (Agricultura de Precisão).</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. PÁGINA PAINEL DE DADOS (DADOS) -->
+        <div id="dados" class="page-content">
+            <h2 class="text-3xl font-bold text-gray-800 mb-8">📊 Painel de Dados e Indicadores</h2>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="bg-white p-6 rounded-xl shadow-xl">
+                    <h3 class="text-xl font-semibold text-terra-marrom mb-4">Áreas Degradadas por Causa (Angola)</h3>
+                    <canvas id="chartDegradacao" role="img" aria-label="Gráfico de rosca mostrando áreas degradadas por causa"></canvas>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-xl">
+                    <h3 class="text-xl font-semibold text-terra-marrom mb-4">Evolução da Erosão do Solo (Angola)</h3>
+                    <canvas id="chartErosao" role="img" aria-label="Gráfico de linha mostrando evolução anual da erosão do solo"></canvas>
+                </div>
+            </div>
+            
+            <!-- Segunda linha de gráficos -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+                <div class="bg-white p-6 rounded-xl shadow-xl">
+                    <h3 class="text-xl font-semibold text-terra-marrom mb-4">Desertificação por Província (Angola)</h3>
+                    <canvas id="chartDesertificacao" role="img" aria-label="Gráfico de barras mostrando desertificação por província"></canvas>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-xl">
+                    <h3 class="text-xl font-semibold text-terra-marrom mb-4">Recuperação de Solos Degradados</h3>
+                    <canvas id="chartRecuperacao" role="img" aria-label="Gráfico de linha mostrando evolução da recuperação de solos"></canvas>
+                </div>
+            </div>
+            <p class="mt-8 text-center text-sm text-gray-500">
+                Fontes: ONU Meio Ambiente, FAO, Ministério do Ambiente de Angola. Dados são simulados para fins de demonstração.
+            </p>
+        </div>
+
+        <!-- 4. PÁGINA MAPA INTERATIVO (MAPA) -->
+        <div id="mapa" class="page-content">
+            <h2 class="text-3xl font-bold text-gray-800 mb-8">🗺️ Mapa de Risco de Desertificação</h2>
+            <div class="bg-white p-4 rounded-xl shadow-xl">
+                <p class="text-gray-600 mb-4">Explore as áreas mais vulneráveis do planeta e clique nos marcadores para ver projetos de recuperação em andamento.</p>
+                <div id="mapa-interativo" class="shadow-inner" role="img" aria-label="Mapa interativo mostrando áreas de risco de desertificação"></div>
+            </div>
+        </div>
+
+        <!-- 5. PÁGINA CAMPANHAS (AÇÃO) -->
+        <div id="acao" class="page-content">
+            <h2 class="text-3xl font-bold text-gray-800 mb-8">📢 Campanhas e Projetos em Destaque</h2>
+            <p class="text-xl text-gray-600 mb-8">Conheça iniciativas de restauração do solo e saiba como você pode participar.</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Card Campanha 1 - Angola -->
+                <div class="campaign-card bg-white p-6 rounded-xl shadow-lg border-t-4 border-terra-verde">
+                    <h3 class="text-xl font-bold text-terra-marrom mb-2">Projeto Cunene Verde</h3>
+                    <p class="text-gray-700 text-sm">Iniciativa de combate à desertificação na região do Cunene através de técnicas de conservação de água e plantio de espécies nativas resistentes à seca.</p>
+                    <p class="mt-4 text-xs font-semibold text-terra-verde">Local: Cunene, Angola</p>
+                    <div class="mt-4 flex justify-between items-center">
+                        <span class="text-xs text-gray-500">Progresso: 65%</span>
+                        <a href="#" class="text-terra-verde hover:text-green-700 font-semibold text-sm">Participar &rarr;</a>
+                    </div>
+                </div>
+                <!-- Card Campanha 2 - Angola -->
+                <div class="campaign-card bg-white p-6 rounded-xl shadow-lg border-t-4 border-blue-500">
+                    <h3 class="text-xl font-bold text-terra-marrom mb-2">Agricultura Sustentável Huíla</h3>
+                    <p class="text-gray-700 text-sm">Capacitação de agricultores familiares em técnicas de plantio direto, rotação de culturas e uso eficiente de recursos hídricos na província da Huíla.</p>
+                    <p class="mt-4 text-xs font-semibold text-terra-verde">Local: Huíla, Angola</p>
+                    <div class="mt-4 flex justify-between items-center">
+                        <span class="text-xs text-gray-500">Progresso: 40%</span>
+                        <a href="#" class="text-blue-500 hover:text-blue-700 font-semibold text-sm">Apoiar &rarr;</a>
+                    </div>
+                </div>
+                <!-- Card Campanha 3 - Angola -->
+                <div class="campaign-card bg-white p-6 rounded-xl shadow-lg border-t-4 border-orange-500">
+                    <h3 class="text-xl font-bold text-terra-marrom mb-2">Recuperação dos Solos de Benguela</h3>
+                    <p class="text-gray-700 text-sm">Projeto de recuperação de solos degradados pela mineração através de técnicas de fitorremediação e reflorestamento com espécies nativas.</p>
+                    <p class="mt-4 text-xs font-semibold text-terra-verde">Local: Benguela, Angola</p>
+                    <div class="mt-4 flex justify-between items-center">
+                        <span class="text-xs text-gray-500">Progresso: 25%</span>
+                        <a href="#" class="text-orange-500 hover:text-orange-700 font-semibold text-sm">Voluntariar &rarr;</a>
+                    </div>
+                </div>
+                <!-- Card Campanha 4 - Angola -->
+                <div class="campaign-card bg-white p-6 rounded-xl shadow-lg border-t-4 border-purple-500">
+                    <h3 class="text-xl font-bold text-terra-marrom mb-2">Proteção das Margens do Kwanza</h3>
+                    <p class="text-gray-700 text-sm">Projeto de proteção das margens do rio Kwanza contra erosão através de plantio de vegetação nativa e construção de barreiras naturais.</p>
+                    <p class="mt-4 text-xs font-semibold text-terra-verde">Local: Rio Kwanza, Angola</p>
+                    <div class="mt-4 flex justify-between items-center">
+                        <span class="text-xs text-gray-500">Progresso: 80%</span>
+                        <a href="#" class="text-purple-500 hover:text-purple-700 font-semibold text-sm">Contribuir &rarr;</a>
+                    </div>
+                </div>
+                <!-- Card Campanha 5 - Angola -->
+                <div class="campaign-card bg-white p-6 rounded-xl shadow-lg border-t-4 border-green-600">
+                    <h3 class="text-xl font-bold text-terra-marrom mb-2">Compostagem Comunitária Luanda</h3>
+                    <p class="text-gray-700 text-sm">Iniciativa de compostagem comunitária para transformar resíduos orgânicos em adubo natural, reduzindo a pressão sobre os solos urbanos.</p>
+                    <p class="mt-4 text-xs font-semibold text-terra-verde">Local: Luanda, Angola</p>
+                    <div class="mt-4 flex justify-between items-center">
+                        <span class="text-xs text-gray-500">Progresso: 55%</span>
+                        <a href="#" class="text-green-600 hover:text-green-800 font-semibold text-sm">Juntar-se &rarr;</a>
+                    </div>
+                </div>
+                <!-- Card Campanha 6 - Angola -->
+                <div class="campaign-card bg-white p-6 rounded-xl shadow-lg border-t-4 border-red-500">
+                    <h3 class="text-xl font-bold text-terra-marrom mb-2">Educação Ambiental Escolar</h3>
+                    <p class="text-gray-700 text-sm">Programa de educação ambiental nas escolas angolanas sobre conservação do solo, práticas sustentáveis e importância da biodiversidade.</p>
+                    <p class="mt-4 text-xs font-semibold text-terra-verde">Local: Todo o território angolano</p>
+                    <div class="mt-4 flex justify-between items-center">
+                        <span class="text-xs text-gray-500">Progresso: 30%</span>
+                        <a href="#" class="text-red-500 hover:text-red-700 font-semibold text-sm">Patrocinar &rarr;</a>
+                    </div>
+                </div>
+            </div>
+
+            <h3 class="text-2xl font-bold text-gray-800 mt-12 mb-6 border-b pb-2">Depoimentos da Comunidade Angolana</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-white p-6 rounded-xl shadow-xl italic text-gray-600">
+                    <p>"O projeto Cunene Verde mudou completamente nossa região. Agora temos água e plantas que resistem à seca!" - João M., Cunene</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-xl italic text-gray-600">
+                    <p>"Aprendi técnicas de compostagem que transformaram minha horta. Meu solo está mais fértil que nunca!" - Ana K., Luanda</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-xl italic text-gray-600">
+                    <p>"A capacitação em agricultura sustentável na Huíla aumentou nossa produção em 40% sem danificar o solo." - Pedro S., Huíla</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-xl italic text-gray-600">
+                    <p>"Meus filhos agora entendem a importância de cuidar da terra. A educação ambiental nas escolas é fundamental!" - Rosa L., Benguela</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6. PÁGINA FORMULÁRIO DE CONTRIBUIÇÃO (CONTRIBUIR) -->
+        <div id="contribuir" class="page-content">
+            <h2 class="text-3xl font-bold text-gray-800 mb-8">📝 Envie Suas Ideias e Contribuições</h2>
+            <div class="bg-white p-6 sm:p-10 rounded-xl shadow-xl max-w-2xl mx-auto">
+                <p class="mb-6 text-gray-600">Faça parte da comunidade TerraViva. Sua sugestão ou relato de projeto pode inspirar milhares!</p>
+                <form id="form-contribuicao" role="form" aria-label="Formulário de contribuição">
+                    <div class="mb-4">
+                        <label for="nome" class="block text-sm font-medium text-gray-700">Nome (Opcional)</label>
+                        <input type="text" id="nome" name="nome" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-3 border focus:ring-terra-verde focus:border-terra-verde" placeholder="Seu nome ou pseudónimo" aria-describedby="nome-help">
+                        <p id="nome-help" class="text-xs text-gray-500 mt-1">Nome não é obrigatório para envio</p>
+                    </div>
+                    <div class="mb-4">
+                        <label for="email" class="block text-sm font-medium text-gray-700">Email (Para contato) <span class="text-red-500">*</span></label>
+                        <input type="email" id="email" name="email" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-3 border focus:ring-terra-verde focus:border-terra-verde" placeholder="seu.email@exemplo.pt" aria-describedby="email-error" aria-invalid="false">
+                        <div id="email-error" class="text-xs text-red-500 mt-1 hidden"></div>
+                    </div>
+                    <div class="mb-4">
+                        <label for="tipo" class="block text-sm font-medium text-gray-700">Tipo de Contribuição <span class="text-red-500">*</span></label>
+                        <select id="tipo" name="tipo" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-3 border focus:ring-terra-verde focus:border-terra-verde" aria-describedby="tipo-help">
+                            <option value="">Selecione uma opção</option>
+                            <option value="sugestao">Sugestão / Ideia Prática</option>
+                            <option value="relato">Relato de Ação Local</option>
+                            <option value="depoimento">Depoimento Pessoal</option>
+                            <option value="duvida">Dúvida Científica</option>
+                        </select>
+                        <p id="tipo-help" class="text-xs text-gray-500 mt-1">Escolha o tipo de contribuição que melhor descreve sua mensagem</p>
+                    </div>
+                    <div class="mb-6">
+                        <label for="mensagem" class="block text-sm font-medium text-gray-700">Mensagem <span class="text-red-500">*</span></label>
+                        <textarea id="mensagem" name="mensagem" rows="4" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-3 border focus:ring-terra-verde focus:border-terra-verde" placeholder="Descreva sua ideia, relato ou dúvida..." aria-describedby="mensagem-error mensagem-help" aria-invalid="false"></textarea>
+                        <p id="mensagem-help" class="text-xs text-gray-500 mt-1">Mínimo de 10 caracteres</p>
+                        <div id="mensagem-error" class="text-xs text-red-500 mt-1 hidden"></div>
+                    </div>
+                    
+                    <div id="form-message" class="hidden p-3 mb-4 rounded-lg text-center font-semibold bg-green-100 text-terra-verde"></div>
+
+                    <button type="submit" class="w-full bg-terra-verde hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg shadow-md transition duration-300">
+                        Enviar Contribuição
+                    </button>
+                </form>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Rodapé -->
+    <footer class="bg-gray-800 text-white mt-12" role="contentinfo">
+        <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 text-center">
+            <p class="text-lg font-semibold">TerraViva</p>
+            <p class="mt-2 text-sm text-gray-400">Preservar o solo é preservar a vida. &copy; 2025</p>
+            <p class="mt-1 text-xs text-gray-500">Desenvolvido por Ebenzer Vilola</p>
+            <div class="mt-4 flex justify-center space-x-4 text-sm">
+                <a href="#" class="text-gray-400 hover:text-terra-verde" aria-label="Termos de uso">Termos de Uso</a>
+                <span class="text-gray-400" aria-hidden="true">|</span>
+                <a href="#" class="text-gray-400 hover:text-terra-verde" aria-label="Política de privacidade">Política de Privacidade</a>
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>
