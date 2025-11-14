@@ -131,33 +131,46 @@ HACkaton/
 ## 🚀 Instalação e Execução
 
 ### Pré-requisitos
-- Navegador web moderno (Chrome, Firefox, Safari, Edge)
-- Conexão com internet (para CDNs)
+- **Navegador web moderno**: Chrome (v90+), Firefox (v88+), Safari (v14+), Edge (v90+)
+- **Conexão com internet**: Necessária para CDNs (Tailwind, Chart.js, Leaflet)
+- **Git** (opcional, para clonar o repositório)
+- **Servidor local** (Python, Node.js ou PHP)
 
-### Instalação
+### Instalação Rápida (Windows)
 
 1. **Clone o repositório**
    ```bash
-   git clone https://github.com/ebenezervilola/terraviva.git
-   cd terraviva
+   git clone https://github.com/Ebenezer412/Hackatoon.git
+   cd Hackatoon
    ```
 
-2. **Abra o arquivo principal**
+2. **Opção 1: Abrir diretamente**
+   ```powershell
+   # Windows PowerShell
+   Start-Process index.html
+   ```
+
+3. **Opção 2: Usar servidor Python (recomendado)**
+   ```powershell
+   # Python 3.x
+   python -m http.server 8000
+   
+   # Acesse no navegador
+   # http://localhost:8000
+   ```
+
+### Instalação em macOS/Linux
+
+1. **Clone o repositório**
    ```bash
-   # No Windows
-   start index.html
-   
-   # No macOS
-   open index.html
-   
-   # No Linux
-   xdg-open index.html
+   git clone https://github.com/Ebenezer412/Hackatoon.git
+   cd Hackatoon
    ```
 
-3. **Ou use um servidor local**
+2. **Use servidor local**
    ```bash
    # Python 3
-   python -m http.server 8000
+   python3 -m http.server 8000
    
    # Node.js
    npx serve .
@@ -166,13 +179,111 @@ HACkaton/
    php -S localhost:8000
    ```
 
-4. **Acesse no navegador**
-   ```
-   http://localhost:8000
-   ```
+### Guia de Configuração Técnica
 
-### Execução Online
-O projeto pode ser executado diretamente abrindo o arquivo `index.html` em qualquer navegador moderno.
+#### Variáveis de Ambiente
+Crie um arquivo `.env` na raiz do projeto (se usar backend):
+
+```env
+NODE_ENV=development
+API_URL=http://localhost:3000
+CHART_DATA_SOURCE=local
+MAP_TILES_URL=https://tile.openstreetmap.org
+```
+
+#### Configuração do Tailwind CSS
+O Tailwind CSS está configurado via CDN com tema personalizado:
+
+```javascript
+tailwind.config = {
+    theme: {
+        extend: {
+            colors: {
+                'terra-verde': '#4CAF50',    // Verde vibrante (primário)
+                'terra-marrom': '#795548',   // Marrom da terra (secundário)
+                'fundo-claro': '#F8F9FA',    // Fundo claro
+            },
+            fontFamily: {
+                sans: ['Inter', 'sans-serif'],
+            },
+        }
+    }
+}
+```
+
+#### Configuração do Chart.js
+Dados centralizados em `js/charts.js`:
+
+```javascript
+const CHART_DATA = {
+    degradacao: { labels: [...], data: [...], colors: [...] },
+    erosao: { labels: [...], data: [...] },
+    desertificacao: { labels: [...], data: [...], colors: [...] },
+    recuperacao: { labels: [...], data: [...] }
+}
+```
+
+#### Configuração do Leaflet
+Mapa interativo em `js/map.js`:
+
+```javascript
+const MAP_CONFIG = {
+    center: [30, -10],
+    zoom: 2,
+    maxZoom: 18,
+    tileLayer: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution: '© OpenStreetMap contributors'
+}
+```
+
+### Solução de Problemas
+
+#### Gráficos não aparecem
+- Verifique se Chart.js foi carregado: `console.log(Chart)`
+- Certifique-se que JavaScript está habilitado no navegador
+- Limpe o cache do navegador (Ctrl+Shift+Del)
+
+#### Mapa não funciona
+- Verifique conexão com internet (Leaflet precisa de tiles remotos)
+- Confirme se Leaflet.js foi carregado: `console.log(L)`
+- Tente outro navegador
+
+#### Estilos não aplicados
+- Verifique se Tailwind CSS CDN foi carregado
+- Confirme se `styles.css` está sendo importado
+- Cheque console do navegador para erros
+
+### Performance e Otimizações
+
+#### Melhorias Implementadas
+- ✅ Lazy loading de gráficos (carregados apenas quando a página é visualizada)
+- ✅ CSS minificado via Tailwind CDN
+- ✅ Fallbacks para recursos indisponíveis
+- ✅ Compressão de imagens
+- ✅ Cache inteligente de gráficos
+
+#### Como Monitorar Performance
+```javascript
+// No console do navegador
+performance.timing.loadEventEnd - performance.timing.navigationStart
+```
+
+### Execução com Docker (Opcional)
+
+```dockerfile
+FROM node:18-alpine
+WORKDIR /app
+COPY . .
+RUN npm install -g serve
+EXPOSE 3000
+CMD ["serve", "-s", ".", "-l", "3000"]
+```
+
+Build e execute:
+```bash
+docker build -t terraviva .
+docker run -p 3000:3000 terraviva
+```
 
 ## 🎯 Funcionalidades
 
