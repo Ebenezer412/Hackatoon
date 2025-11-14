@@ -79,7 +79,21 @@ function initializePageResources(pageId) {
         case 'mapa':
             setTimeout(() => {
                 if (typeof window.initMap === 'function') {
-                    window.initMap();
+                    // Verificar se Leaflet está disponível
+                    if (typeof window.L !== 'undefined' && window.L.map) {
+                        window.initMap();
+                    } else {
+                        console.warn('Leaflet não carregado, tentando novamente...');
+                        // Tentar novamente em 500ms
+                        setTimeout(() => {
+                            if (typeof window.L !== 'undefined' && window.L.map) {
+                                window.initMap();
+                            } else {
+                                console.error('Leaflet ainda não está disponível');
+                                showMapFallback();
+                            }
+                        }, 500);
+                    }
                 } else {
                     console.error('initMap não está disponível');
                 }

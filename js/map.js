@@ -44,8 +44,8 @@ const MAP_CONFIG = {
 function initMap() {
     try {
         // Verificar se Leaflet está disponível
-        if (typeof L === 'undefined') {
-            throw new Error('Leaflet.js não está carregado');
+        if (typeof L === 'undefined' || !L.map) {
+            throw new Error('Leaflet.js não está carregado corretamente');
         }
 
         // Verificar se o elemento do mapa existe
@@ -55,16 +55,28 @@ function initMap() {
         }
 
         // Remove instância anterior se existir
-        if (mapInstance) {
-            mapInstance.remove();
+        if (mapInstance && typeof mapInstance.remove === 'function') {
+            try {
+                mapInstance.remove();
+            } catch (e) {
+                console.warn('Erro ao remover mapa anterior:', e);
+            }
             mapInstance = null;
         }
         
+        // Aguardar que o Leaflet esteja completamente disponível
+        if (!window.L || !window.L.map) {
+            setTimeout(() => {
+                initMap();
+            }, 100);
+            return;
+        }
+        
         // Criar nova instância do mapa
-        mapInstance = L.map('mapa-interativo').setView(MAP_CONFIG.center, MAP_CONFIG.zoom);
+        mapInstance = window.L.map('mapa-interativo').setView(MAP_CONFIG.center, MAP_CONFIG.zoom);
 
         // Adicionar camada de tiles
-        L.tileLayer(MAP_CONFIG.tileLayer, {
+        window.L.tileLayer(MAP_CONFIG.tileLayer, {
             maxZoom: MAP_CONFIG.maxZoom,
             attribution: MAP_CONFIG.attribution
         }).addTo(mapInstance);
@@ -87,7 +99,7 @@ function addMarkersToMap() {
 
     MAP_MARKERS.forEach(marker => {
         try {
-            L.marker(marker.coords)
+            window.L.marker(marker.coords)
                 .addTo(mapInstance)
                 .bindPopup(`<strong>${marker.title}</strong><br>${marker.info}`);
         } catch (error) {
@@ -134,8 +146,8 @@ function setMapCenter(lat, lng, zoom = MAP_CONFIG.zoom) {
  * Adiciona um novo marcador ao mapa
  */
 function addMarker(lat, lng, title, info) {
-    if (mapInstance) {
-        L.marker([lat, lng])
+    if (mapInstance && window.L) {
+        window.L.marker([lat, lng])
             .addTo(mapInstance)
             .bindPopup(`<strong>${title}</strong><br>${info}`);
     }

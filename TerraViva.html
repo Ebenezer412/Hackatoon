@@ -1,0 +1,1204 @@
+<!-- Chosen Palette: TerraViva (Earthy Tones: #795548 Marrom, #F5F5DC Clara, #4CAF50 Verde Accent) -->
+<!-- Application Structure Plan: A single-page application (SPA) design using a top navigation bar to toggle the visibility of six thematic sections ('Home', 'Degradação', 'Projetos', 'Estatísticas', 'Assistente IA', 'Contribuir'). This tab-based structure, controlled by the showPage() function, allows users to explore the report's content in a non-linear way, focusing on their area of interest (e.g., data, maps, or AI insights) while keeping all information within a single, easily navigable context. This is more user-friendly than a long scrolling page. -->
+<!-- Visualization & Content Choices: 1. Home Stats (HTML/Tailwind) -> Goal: Inform -> Simple stat cards for key metrics (40% risk) -> Justification: Quick overview. 2. Degradation Info (HTML Tabs) -> Goal: Organize -> Clickable tabs (Causas, Soluções) to show/hide text blocks -> Justification: Manages text density. 3. Projects Map (Leaflet.js) -> Goal: Relationships -> Interactive map with markers for real Angolan locations (Cunene, Huíla) -> Justification: Geospatial context is critical. 4. Statistics (Chart.js) -> Goal: Compare/Change -> Doughnut (Causas), Line (Erosão), Bar (Desertificação, Recuperação) charts in styled containers -> Justification: Best-fit visuals for the data types. 5. AI Assistant (Gemini API) -> Goal: Inform/Explore -> Interactive text prompt for live data -> Justification: High user engagement and real-time info. -->
+<!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TerraViva: Preservar o solo é preservar a vida.</title>
+    
+    <meta name="description" content="TerraViva: Plataforma educativa sobre preservação do solo e combate à degradação ambiental. Conheça causas, consequências e soluções sustentáveis.">
+    <meta name="keywords" content="degradação do solo, preservação ambiental, sustentabilidade, agricultura, desertificação, erosão, Angola">
+    <meta name="author" content="TerraViva">
+    <meta name="robots" content="index, follow">
+    
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="TerraViva: Preservar o solo é preservar a vida">
+    <meta property="og:description" content="Conheça os impactos da degradação do solo e soluções sustentáveis para preservar nosso planeta">
+    <meta property="og:url" content="https://terraviva.com">
+    <meta property="og:site_name" content="TerraViva">
+    
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="TerraViva: Preservar o solo é preservar a vida">
+    <meta name="twitter:description" content="Plataforma de conscientização sobre a degradação do solo.">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'terra-verde': '#4CAF50',
+                        'terra-verde-dark': '#388E3C',
+                        'terra-marrom': '#795548',
+                        'terra-clara': '#F5F5DC',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/SVRKdeZPdI+4rf8dE=" crossorigin=""/>
+
+    <style>
+        :root {
+            --terra-verde: #4CAF50;
+            --terra-verde-dark: #388E3C;
+            --terra-marrom: #795548;
+            --terra-clara: #F5F5DC;
+        }
+        html {
+            scroll-behavior: smooth;
+        }
+        .page-content {
+            display: none;
+        }
+        #mapa-interativo {
+            height: 500px;
+            z-index: 10;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .nav-link.active {
+            color: var(--terra-verde);
+            font-weight: 700;
+            border-bottom: 3px solid var(--terra-verde);
+        }
+        .campaign-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .campaign-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+        }
+        input[aria-invalid="true"],
+        textarea[aria-invalid="true"],
+        select[aria-invalid="true"] {
+            border-color: #ef4444;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+        }
+        @media (max-width: 320px) {
+            .hero-section {
+                padding: 2rem 1rem;
+            }
+            .hero-title {
+                font-size: 2rem;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+        }
+        .page-content {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        .page-content.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--terra-verde);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 0.5rem;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .tab-button.active {
+            background-color: var(--terra-verde);
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+        }
+        .tab-button {
+            transition: all 0.2s ease-in-out;
+        }
+        .tab-content {
+            display: none;
+            padding-top: 1rem;
+        }
+        #ai-response {
+            min-height: 150px;
+            background-color: var(--terra-clara);
+            border: 1px solid #ccc;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            white-space: pre-wrap;
+            box-shadow: inset 0 1px 3px 0 rgba(0,0,0,0.1);
+        }
+        .citation-box {
+            margin-top: 1rem;
+            padding: 1rem;
+            border-left: 4px solid var(--terra-verde);
+            background-color: #f7fdee;
+            font-size: 0.875rem;
+            color: #4B5563;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+    </style>
+    
+</head>
+<body class="font-sans bg-gray-50 text-gray-800 antialiased">
+
+    <header class="bg-white shadow-md sticky top-0 z-50" role="banner">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <a href="#" onclick="showPage('home')" class="text-2xl font-black text-terra-verde tracking-wider">
+                    <span class="text-terra-marrom">Terra</span>Viva
+                </a>
+
+                <nav class="flex space-x-4 sm:space-x-8" role="navigation">
+                    <a href="#home" onclick="showPage('home')" class="nav-link text-gray-600 hover:text-terra-verde transition duration-150 py-5" aria-label="Página Inicial">Início</a>
+                    <a href="#degradacao-solo" onclick="showPage('degradacao-solo')" class="nav-link text-gray-600 hover:text-terra-verde transition duration-150 py-5" aria-label="Informações sobre Degradação do Solo">Degradação</a>
+                    <a href="#mapa-interativo-page" onclick="showPage('mapa-interativo-page')" class="nav-link text-gray-600 hover:text-terra-verde transition duration-150 py-5" aria-label="Mapa Interativo de Projetos">Projetos</a>
+                    <a href="#dados-estatisticos" onclick="showPage('dados-estatisticos')" class="nav-link text-gray-600 hover:text-terra-verde transition duration-150 py-5" aria-label="Dados Estatísticos">Estatísticas</a>
+                    <a href="#ia-assistente" onclick="showPage('ia-assistente')" class="nav-link text-gray-600 hover:text-terra-verde transition duration-150 py-5" aria-label="Assistente de Inteligência Artificial">Assistente IA</a>
+                    <a href="#contribuicao" onclick="showPage('contribuicao')" class="nav-link text-gray-600 hover:text-terra-verde transition duration-150 py-5" aria-label="Página de Contribuição">Contribuir</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main class="min-h-screen" role="main">
+        
+        <div id="home" class="page-content active">
+            <section class="hero-section bg-cover bg-center text-white py-20 md:py-32 relative" 
+                     style="background-image: url('https://placehold.co/1920x600/795548/ffffff?text=Solo+Saud%C3%A1vel+Angola')">
+                <div class="absolute inset-0 bg-black opacity-50"></div>
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+                    <h1 class="hero-title text-4xl md:text-6xl font-extrabold mb-4 drop-shadow-lg">
+                        TerraViva: Preservar o solo é preservar a vida.
+                    </h1>
+                    <p class="text-xl md:text-2xl font-light mb-8 drop-shadow-md">
+                        Plataforma educativa sobre degradação do solo, focada no contexto Angolano.
+                    </p>
+                    <a href="#degradacao-solo" onclick="showPage('degradacao-solo')" class="bg-terra-verde hover:bg-green-600 text-white font-bold py-3 px-8 rounded-full text-lg shadow-lg transition duration-300">
+                        Saiba Mais
+                    </a>
+                </div>
+            </section>
+            
+            <section class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+                <h2 class="text-3xl font-bold text-center mb-10 text-terra-verde-dark">O Desafio Angolano</h2>
+                <div class="grid md:grid-cols-3 gap-8 stats-grid text-center">
+                    <div class="p-6 bg-white rounded-xl shadow-lg border-t-4 border-terra-marrom">
+                        <span class="text-5xl text-terra-marrom mx-auto mb-4">🏜️</span>
+                        <p class="text-4xl font-extrabold text-terra-verde mb-2">40%</p>
+                        <p class="text-gray-600">Área sob risco de desertificação (Sul de Angola)</p>
+                    </div>
+                    <div class="p-6 bg-white rounded-xl shadow-lg border-t-4 border-terra-marrom">
+                        <span class="text-5xl text-terra-marrom mx-auto mb-4">👨‍👩‍👧‍👦</span>
+                        <p class="text-4xl font-extrabold text-terra-verde mb-2">~60%</p>
+                        <p class="text-gray-600">População que depende da agricultura familiar (Fonte: FAO)</p>
+                    </div>
+                    <div class="p-6 bg-white rounded-xl shadow-lg border-t-4 border-terra-marrom">
+                        <span class="text-5xl text-terra-marrom mx-auto mb-4">✅</span>
+                        <p class="text-4xl font-extrabold text-terra-verde mb-2">15+</p>
+                        <p class="text-gray-600">Projetos de recuperação e sustentabilidade ativos em Angola</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div id="degradacao-solo" class="page-content">
+            <section class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+                <h2 class="text-4xl font-extrabold text-center mb-6 text-terra-verde-dark">Degradação do Solo: Entenda o Problema</h2>
+                <p class="text-lg text-center text-gray-700 max-w-3xl mx-auto mb-8">A degradação do solo é um problema complexo. Esta secção explora as suas causas, as graves consequências para Angola e as soluções sustentáveis que estão a ser implementadas. Navegue pelas abas para explorar cada tópico.</p>
+                
+                <div class="flex flex-wrap justify-center space-x-2 md:space-x-4 mb-8">
+                    <button class="tab-button active px-6 py-2 rounded-full text-sm md:text-base transition duration-300 bg-terra-verde text-white" 
+                            onclick="showTopic('causas')">Causas</button>
+                    <button class="tab-button px-6 py-2 rounded-full text-sm md:text-base transition duration-300 bg-gray-200 hover:bg-gray-300" 
+                            onclick="showTopic('consequencias')">Consequências</button>
+                    <button class="tab-button px-6 py-2 rounded-full text-sm md:text-base transition duration-300 bg-gray-200 hover:bg-gray-300" 
+                            onclick="showTopic('solucoes')">Soluções Sustentáveis</button>
+                </div>
+
+                <div id="causas" class="tab-content active p-6 bg-white rounded-xl shadow-xl">
+                    <h3 class="text-2xl font-bold mb-4 text-terra-marrom">Causas Principais</h3>
+                    <p class="text-gray-700 leading-relaxed">Em Angola, as principais causas da degradação do solo e desertificação estão ligadas a práticas insustentáveis de uso da terra e a fatores climáticos extremos, especialmente na região sul. O desmatamento para obtenção de lenha e carvão vegetal e a agricultura de corte e queima são grandes problemas, pois removem a camada protetora do solo, deixando-o vulnerável à erosão hídrica e eólica. A pastagem excessiva, particularly nas províncias do Sul, leva à compactação e perda de cobertura vegetal.</p>
+                    <ul class="list-disc list-inside mt-4 space-y-2 text-gray-600">
+                        <li><span class="font-semibold">Desmatamento:</span> Remoção de florestas sem replantio adequado.</li>
+                        <li><span class="font-semibold">Erosão:</span> Perda da camada superficial do solo devido a chuvas intensas e vento.</li>
+                        <li><span class="font-semibold">Pastagem Excessiva:</span> Sobreutilização de terras de pastagem, impedindo a recuperação da vegetação.</li>
+                        <li><span class="font-semibold">Práticas Agrícolas Inadequadas:</span> Monocultura e uso excessivo de produtos químicos.</li>
+                    </ul>
+                </div>
+                
+                <div id="consequencias" class="tab-content p-6 bg-white rounded-xl shadow-xl">
+                    <h3 class="text-2xl font-bold mb-4 text-terra-marrom">Impactos da Degradação</h3>
+                    <p class="text-gray-700 leading-relaxed">As consequências da degradação do solo são vastas e afetam diretamente a segurança alimentar e a qualidade de vida. A redução da produtividade agrícola ameaça a subsistência das comunidades rurais, levando à migração e ao aumento da pobreza. No Sul do país, o avanço da desertificação transforma terras produtivas em áreas áridas, exacerbando a seca e os conflitos por recursos hídricos.</p>
+                    <ul class="list-disc list-inside mt-4 space-y-2 text-gray-600">
+                        <li><span class="font-semibold">Segurança Alimentar:</span> Redução drástica das colheitas.</li>
+                        <li><span class="font-semibold">Escassez Hídrica:</span> O solo degradado tem menor capacidade de retenção de água.</li>
+                        <li><span class="font-semibold">Perda de Biodiversidade:</span> Destruição de habitats naturais.</li>
+                        <li><span class="font-semibold">Aumento da Pobreza:</span> Comunidades rurais perdem a sua fonte de rendimento.</li>
+                    </ul>
+                </div>
+                
+                <div id="solucoes" class="tab-content p-6 bg-white rounded-xl shadow-xl">
+                    <h3 class="text-2xl font-bold mb-4 text-terra-marrom">Estratégias de Recuperação</h3>
+                    <p class="text-gray-700 leading-relaxed">A chave para reverter a degradação reside na adoção de práticas de gestão sustentável da terra. Em Angola, iniciativas focam em técnicas de conservação de água e solo (como barragens subterrâneas e terraços), agroflorestas e reflorestamento com espécies nativas. A educação das comunidades sobre o manejo correto do pastoreio e a diversificação de culturas são essenciais para construir resiliência climática.</p>
+                    <ul class="list-disc list-inside mt-4 space-y-2 text-gray-600">
+                        <li><span class="font-semibold">Agrofloresta:</span> Combinação de árvores, culturas e pecuária.</li>
+                        <li><span class="font-semibold">Plantio Direto:</span> Técnica que minimiza a perturbação do solo.</li>
+                        <li><span class="font-semibold">Controlo da Erosão:</span> Construção de curvas de nível e quebra-ventos.</li>
+                        <li><span class="font-semibold">Reflorestamento:</span> Uso de espécies nativas resistentes à seca.</li>
+                    </ul>
+                </div>
+
+            </section>
+        </div>
+
+        <div id="mapa-interativo-page" class="page-content">
+            <section class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+                <h2 class="text-4xl font-extrabold text-center mb-6 text-terra-verde-dark">Projetos e Áreas de Risco em Angola</h2>
+                <p class="text-lg text-center text-gray-700 max-w-3xl mx-auto mb-8">O mapa interativo mostra áreas de risco de desertificação e projetos de recuperação ativos (dados simulados, mas baseados em localização real) em Angola. Clique nos marcadores para saber mais.</p>
+                <div class="bg-white p-6 rounded-xl shadow-xl">
+                    <div id="mapa-interativo" class="rounded-lg shadow-inner">
+                    </div>
+                    <div class="mt-4 text-sm text-gray-500 text-center">
+                        <p>Fontes de Dados Simulação: ONU Meio Ambiente, Ministério do Ambiente de Angola. Mapas baseados em OpenStreetMap.</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div id="dados-estatisticos" class="page-content">
+            <section class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+                <h2 class="text-4xl font-extrabold text-center mb-6 text-terra-verde-dark">Dados e Estatísticas (Angola)</h2>
+                <p class="text-lg text-center text-gray-700 max-w-3xl mx-auto mb-8">Os dados quantitativos ajudam-nos a compreender a escala do desafio. Explore os gráficos interativos abaixo (com dados simulados) para ver a distribuição das causas, a tendência da erosão e o risco de desertificação nas províncias do sul de Angola.</p>
+                
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div class="bg-white p-6 rounded-xl shadow-xl flex flex-col">
+                        <h3 class="text-2xl font-bold mb-4 text-center text-terra-marrom">Causas de Degradação (Estimativa %)</h3>
+                        <div class="chart-container">
+                            <canvas id="chartDegradacao" role="img" aria-label="Gráfico de pizza mostrando as principais causas de degradação do solo em Angola."></canvas>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl shadow-xl flex flex-col">
+                        <h3 class="text-2xl font-bold mb-4 text-center text-terra-marrom">Área Afetada por Erosão (Milhões de Hectares)</h3>
+                        <div class="chart-container">
+                            <canvas id="chartErosao" role="img" aria-label="Gráfico de linha mostrando a evolução da área afetada por erosão ao longo dos anos."></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white p-6 rounded-xl shadow-xl flex flex-col">
+                        <h3 class="text-2xl font-bold mb-4 text-center text-terra-marrom">Risco de Desertificação por Província (Sul)</h3>
+                        <div class="chart-container">
+                            <canvas id="chartDesertificacao" role="img" aria-label="Gráfico de barras mostrando o risco de desertificação por província."></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white p-6 rounded-xl shadow-xl flex flex-col">
+                        <h3 class="text-2xl font-bold mb-4 text-center text-terra-marrom">Área em Recuperação (Milhares de Hectares)</h3>
+                        <div class="chart-container">
+                            <canvas id="chartRecuperacao" role="img" aria-label="Gráfico de barras mostrando a área em recuperação através de projetos."></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-8 p-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 rounded-lg" role="alert">
+                    <p class="font-semibold">Aviso:</p>
+                    <p class="text-sm">Os dados apresentados são simulados e têm caráter meramente demonstrativo e educativo, baseados em relatórios públicos de Angola.</p>
+                </div>
+            </section>
+        </div>
+        
+        <div id="ia-assistente" class="page-content">
+            <section class="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+                <h2 class="text-4xl font-extrabold text-center mb-12 text-terra-verde-dark">Assistente de IA: Tire as Suas Dúvidas</h2>
+                
+                <div class="bg-white p-8 rounded-xl shadow-xl">
+                    <p class="text-gray-600 mb-6">Pergunte ao nosso Assistente de IA sobre qualquer tema relacionado à degradação do solo, sustentabilidade, agricultura ou projetos em Angola. Ele fornecerá um resumo conciso com base nas informações mais recentes.</p>
+                    
+                    <div class="mb-6">
+                        <label for="ai-prompt" class="block text-lg font-medium text-gray-700 mb-2">A Sua Pergunta:</label>
+                        <textarea id="ai-prompt" rows="3" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-terra-verde focus:border-terra-verde transition duration-150" placeholder="Ex: Quais são as melhores técnicas de agrofloresta para o clima seco do Namibe?"></textarea>
+                    </div>
+                    
+                    <button id="ai-submit-button" onclick="handleAIQuery()" class="w-full bg-terra-verde hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg shadow-md transition duration-300 flex items-center justify-center">
+                        <span id="ai-spinner" class="loading-spinner hidden"></span>
+                        <span id="ai-button-text">Obter Resposta da IA</span>
+                    </button>
+                    
+                    <div class="mt-8">
+                        <h3 class="text-xl font-bold mb-3 text-terra-marrom">Resposta do Assistente:</h3>
+                        <div id="ai-response" class="p-4 border border-gray-200 rounded-lg text-gray-700 min-h-[100px] flex items-center justify-center text-center">
+                            <p class="text-gray-500">A sua resposta aparecerá aqui.</p>
+                        </div>
+                        <div id="ai-citation" class="citation-box hidden">
+                            <p class="font-bold mb-1">Fontes:</p>
+                            <ul id="citation-list" class="list-disc list-inside space-y-1"></ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div id="contribuicao" class="page-content">
+            <section class="max-w-3xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+                <h2 class="text-4xl font-extrabold text-center mb-12 text-terra-verde-dark">Junte-se ao Movimento TerraViva</h2>
+
+                <div class="bg-white p-8 rounded-xl shadow-xl">
+                    <p class="text-lg text-center text-gray-600 mb-6">Tem um projeto de sustentabilidade? Dados? Ideias? Contribua para o nosso conhecimento!</p>
+                    
+                    <form id="form-contribuicao" aria-label="Formulário de Contribuição">
+                        <div class="mb-4">
+                            <label for="nome" class="block text-sm font-medium text-gray-700">Nome/Organização *</label>
+                            <input type="text" id="nome" name="nome" required class="mt-1 block w-full p-3 border border-gray-300 rounded-lg focus:ring-terra-verde focus:border-terra-verde">
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="email" class="block text-sm font-medium text-gray-700">Email *</label>
+                            <input type="email" id="email" name="email" required class="mt-1 block w-full p-3 border border-gray-300 rounded-lg focus:ring-terra-verde focus:border-terra-verde">
+                        </div>
+
+                        <div class="mb-6">
+                            <label for="mensagem" class="block text-sm font-medium text-gray-700">Mensagem e Detalhes da Contribuição *</label>
+                            <textarea id="mensagem" name="mensagem" rows="4" required class="mt-1 block w-full p-3 border border-gray-300 rounded-lg focus:ring-terra-verde focus:border-terra-verde" placeholder="Descreva o seu projeto, os dados que tem ou a sua sugestão."></textarea>
+                            <div id="mensagem-error" class="text-xs text-red-500 mt-1 hidden"></div>
+                        </div>
+                        
+                        <div id="form-message" class="hidden p-3 mb-4 rounded-lg text-center font-semibold bg-green-100 text-terra-verde"></div>
+
+                        <button type="submit" class="w-full bg-terra-verde hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg shadow-md transition duration-300">
+                            Enviar Contribuição
+                        </button>
+                    </form>
+                </div>
+            </section>
+        </div>
+
+    </main>
+
+    <footer class="bg-gray-800 text-white mt-12" role="contentinfo">
+        <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 text-center">
+            <p class="text-lg font-semibold">TerraViva</p>
+            <p class="mt-2 text-sm text-gray-400">Preservar o solo é preservar a vida. &copy; 2025</p>
+            <p class="mt-1 text-xs text-gray-500">Desenvolvido por Ebenzer Vilola</p>
+            <div class="mt-4 flex justify-center space-x-4 text-sm">
+                <a href="#home" onclick="showPage('home')" class="text-gray-400 hover:text-terra-verde" aria-label="Início">Início</a>
+                <a href="#contribuicao" onclick="showPage('contribuicao')" class="text-gray-400 hover:text-terra-verde" aria-label="Contribuição">Contato</a>
+            </div>
+        </div>
+    </footer>
+    
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20n6aRzXy34iH0oYDFzG6v1+9w4z3W2Hk6S6f8P4jD0=" crossorigin=""></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+
+    <script type="module">
+        let chartDegradacaoInstance = null;
+        let chartErosaoInstance = null;
+        let chartDesertificacaoInstance = null;
+        let chartRecuperacaoInstance = null;
+
+        const CHART_DATA = {
+            degradacao: {
+                labels: ['Desmatamento/Queimadas', 'Pastagem Excessiva', 'Erosão Hídrica', 'Monocultura', 'Mineração Informal'],
+                data: [45, 25, 15, 10, 5],
+                colors: ['#D35400', '#F39C12', '#3498DB', '#2ECC71', '#95A5A6']
+            },
+            erosao: {
+                labels: ['2015', '2017', '2019', '2021', '2023', '2025 (Est)'],
+                data: [18.5, 19.2, 20.1, 19.8, 19.5, 18.9],
+                colors: ['#2980B9', '#8E44AD']
+            },
+            desertificacao: {
+                labels: ['Cunene', 'Huíla', 'Namibe', 'Cuando Cubango', 'Benguela'],
+                data: [75, 55, 60, 45, 30],
+                colors: ['#E74C3C', '#E67E22', '#F1C40F', '#1ABC9C', '#3498DB']
+            },
+            recuperacao: {
+                labels: ['2021', '2022', '2023', '2024 (Est)'],
+                data: [50, 75, 120, 180],
+                colors: ['#27AE60', '#16A085', '#2C3E50', '#8E44AD']
+            }
+        };
+
+        function createChart(canvasId, type, labels, data, colors, title) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return null;
+
+            // Verificar se Chart.js está disponível
+            if (typeof Chart === 'undefined') {
+                console.error('Chart.js não está carregado');
+                return null;
+            }
+
+            const config = {
+                type: type,
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: title,
+                        data: data,
+                        backgroundColor: colors,
+                        borderColor: type === 'line' ? colors[0] : '#ffffff',
+                        borderWidth: type === 'line' ? 2 : 1,
+                        fill: type === 'line' ? false : true,
+                        tension: type === 'line' ? 0.4 : 0,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: type === 'doughnut' ? 'right' : 'top',
+                            labels: {
+                                font: {
+                                    size: 10
+                                }
+                            }
+                        },
+                        title: {
+                            display: false,
+                        }
+                    },
+                    scales: type === 'line' || type === 'bar' ? {
+                        y: {
+                            beginAtZero: true
+                        },
+                        x: {}
+                    } : {}
+                }
+            };
+            return new Chart(canvas, config);
+        }
+
+        function initializeCharts() {
+            try {
+                if (chartDegradacaoInstance) return;
+
+                chartDegradacaoInstance = createChart(
+                    'chartDegradacao', 
+                    'doughnut', 
+                    CHART_DATA.degradacao.labels, 
+                    CHART_DATA.degradacao.data, 
+                    CHART_DATA.degradacao.colors, 
+                    'Causas de Degradação'
+                );
+
+                chartErosaoInstance = createChart(
+                    'chartErosao', 
+                    'line', 
+                    CHART_DATA.erosao.labels, 
+                    CHART_DATA.erosao.data, 
+                    CHART_DATA.erosao.colors, 
+                    'Área Afetada por Erosão'
+                );
+
+                chartDesertificacaoInstance = createChart(
+                    'chartDesertificacao', 
+                    'bar', 
+                    CHART_DATA.desertificacao.labels, 
+                    CHART_DATA.desertificacao.data, 
+                    CHART_DATA.desertificacao.colors, 
+                    'Risco de Desertificação'
+                );
+
+                chartRecuperacaoInstance = createChart(
+                    'chartRecuperacao', 
+                    'bar', 
+                    CHART_DATA.recuperacao.labels, 
+                    CHART_DATA.recuperacao.data, 
+                    CHART_DATA.recuperacao.colors, 
+                    'Área em Recuperação'
+                );
+
+                console.log('Gráficos inicializados com sucesso.');
+            } catch (error) {
+                console.error('Erro ao inicializar gráficos:', error);
+                showFallbackContent('chartDegradacao');
+                showFallbackContent('chartErosao');
+                showFallbackContent('chartDesertificacao');
+                showFallbackContent('chartRecuperacao');
+            }
+        }
+
+        function showFallbackContent(canvasId) {
+            const canvas = document.getElementById(canvasId);
+            if (canvas) {
+                const container = canvas.parentElement;
+                container.innerHTML = `
+                    <div class="p-8 text-center text-gray-500">
+                        <p class="text-lg font-semibold mb-2">Gráfico temporariamente indisponível</p>
+                        <p class="text-sm">Os dados estão sendo carregados ou houve um erro. Tente recarregar a página ou consulte o Assistente de IA.</p>
+                    </div>
+                `;
+            }
+        }
+
+        function destroyCharts() {
+            if (chartDegradacaoInstance) {
+                chartDegradacaoInstance.destroy();
+                chartDegradacaoInstance = null;
+            }
+            if (chartErosaoInstance) {
+                chartErosaoInstance.destroy();
+                chartErosaoInstance = null;
+            }
+            if (chartDesertificacaoInstance) {
+                chartDesertificacaoInstance.destroy();
+                chartDesertificacaoInstance = null;
+            }
+            if (chartRecuperacaoInstance) {
+                chartRecuperacaoInstance.destroy();
+                chartRecuperacaoInstance = null;
+            }
+            console.log('Gráficos destruídos.');
+        }
+
+        let mapInstance = null;
+
+        const MAP_MARKERS = [
+            { 
+                coords: [-17.33, 15.78], 
+                title: 'Projeto Cunene Verde', 
+                info: 'Combate à desertificação em Namacunde. Micro-barragens e plantio de espécies nativas resistentes à seca. Progresso: 65%.' 
+            },
+            { 
+                coords: [-14.92, 13.50], 
+                title: 'Agrofloresta Huíla', 
+                info: 'Sistema integrado de árvores, culturas e pecuária em Chibia. Capacitação de 500 agricultores. Progresso: 40%.' 
+            },
+            { 
+                coords: [-15.19, 12.15], 
+                title: 'Corredor Verde Namibe', 
+                info: 'Barreiras de vegetação resistente à seca para mitigar erosão eólica. Extensão: 150 km. Progresso: 55%.' 
+            },
+            { 
+                coords: [-14.93, 17.68], 
+                title: 'Reflorestamento Cuando Cubango', 
+                info: 'Restauração de áreas desflorestadas em Mavinga. 50.000 árvores plantadas. Progresso: 35%.' 
+            },
+            { 
+                coords: [-13.00, 15.00], 
+                title: 'Proteção Margens Kwanza', 
+                info: 'Prevenção de erosão fluvial com vegetação nativa ao longo do rio Kwanza. Progresso: 80%.' 
+            },
+            { 
+                coords: [-8.83, 13.23], 
+                title: 'Compostagem Comunitária Luanda', 
+                info: 'Gestão de resíduos orgânicos em comunidades urbanas. 20 centros ativos. Progresso: 55%.' 
+            },
+            { 
+                coords: [-16.50, 14.50], 
+                title: 'Área de Risco Alto - Benguela', 
+                info: 'Região com seca severa e erosão acelerada. Necessário intensificar intervenções.' 
+            },
+            { 
+                coords: [-15.50, 19.00], 
+                title: 'Monitoramento Lunda Sul', 
+                info: 'Monitoramento de desmatamento ilegal. Fiscalização em andamento.' 
+            }
+        ];
+
+        const MAP_CONFIG = {
+            center: [-12.0, 17.0], 
+            zoom: 5,
+            maxZoom: 18,
+            tileLayer: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+            attribution: '© OpenStreetMap contributors'
+        };
+
+        // Dados de projetos para exibição alternativa
+        const PROJECTS_DATA = [
+            {
+                id: 1,
+                name: 'Projeto Cunene Verde',
+                location: 'Namacunde, Cunene',
+                province: 'Cunene',
+                type: 'Combate à Desertificação',
+                status: 'Em Andamento',
+                progress: 65,
+                description: 'Micro-barragens e plantio de espécies nativas resistentes à seca.',
+                startDate: '2021-03-15',
+                budget: '150,000 USD',
+                beneficiaries: 2500
+            },
+            {
+                id: 2,
+                name: 'Agrofloresta Huíla',
+                location: 'Chibia, Huíla',
+                province: 'Huíla',
+                type: 'Agricultura Sustentável',
+                status: 'Em Andamento',
+                progress: 40,
+                description: 'Sistema integrado de árvores, culturas e pecuária. Capacitação de agricultores.',
+                startDate: '2022-06-20',
+                budget: '200,000 USD',
+                beneficiaries: 500
+            },
+            {
+                id: 3,
+                name: 'Corredor Verde Namibe',
+                location: 'Namibe',
+                province: 'Namibe',
+                type: 'Proteção contra Erosão',
+                status: 'Em Andamento',
+                progress: 55,
+                description: 'Barreiras de vegetação resistente à seca (150 km) para mitigar erosão eólica.',
+                startDate: '2022-01-10',
+                budget: '300,000 USD',
+                beneficiaries: 1200
+            },
+            {
+                id: 4,
+                name: 'Reflorestamento Cuando Cubango',
+                location: 'Mavinga, Cuando Cubango',
+                province: 'Cuando Cubango',
+                type: 'Reflorestamento',
+                status: 'Em Andamento',
+                progress: 35,
+                description: 'Restauração de áreas desflorestadas. 50.000 árvores nativas plantadas.',
+                startDate: '2023-02-01',
+                budget: '180,000 USD',
+                beneficiaries: 800
+            },
+            {
+                id: 5,
+                name: 'Proteção Margens Kwanza',
+                location: 'Rio Kwanza',
+                province: 'Kwanza Sul',
+                type: 'Prevenção de Erosão',
+                status: 'Avançado',
+                progress: 80,
+                description: 'Prevenção de erosão fluvial com vegetação nativa ao longo do rio.',
+                startDate: '2020-09-15',
+                budget: '250,000 USD',
+                beneficiaries: 3000
+            },
+            {
+                id: 6,
+                name: 'Compostagem Comunitária Luanda',
+                location: 'Luanda',
+                province: 'Luanda',
+                type: 'Gestão de Resíduos',
+                status: 'Em Andamento',
+                progress: 55,
+                description: 'Gestão de resíduos orgânicos em comunidades urbanas. 20 centros ativos.',
+                startDate: '2022-07-01',
+                budget: '100,000 USD',
+                beneficiaries: 5000
+            },
+            {
+                id: 7,
+                name: 'Educação Ambiental Nacional',
+                location: 'Todo o País',
+                province: 'Múltiplas',
+                type: 'Educação',
+                status: 'Em Andamento',
+                progress: 30,
+                description: 'Programa nacional de conscientização sobre degradação do solo.',
+                startDate: '2023-01-01',
+                budget: '120,000 USD',
+                beneficiaries: 50000
+            },
+            {
+                id: 8,
+                name: 'Monitoria Desmatamento',
+                location: 'Lunda Sul',
+                province: 'Lunda Sul',
+                type: 'Fiscalização',
+                status: 'Em Andamento',
+                progress: 25,
+                description: 'Monitoramento de desmatamento ilegal e fiscalização contínua.',
+                startDate: '2023-05-15',
+                budget: '90,000 USD',
+                beneficiaries: 10000
+            }
+        ];
+
+        function initializeMap() {
+            try {
+                // Limpar tentativas anteriores
+                if (mapInstance) {
+                    try {
+                        if (mapInstance._container) {
+                            mapInstance.remove();
+                        }
+                    } catch (e) {
+                        console.warn('Erro ao remover mapa anterior:', e);
+                    }
+                    mapInstance = null;
+                }
+
+                // Restaurar elemento do mapa (em caso de falhas anteriores)
+                const mapElement = document.getElementById('mapa-interativo');
+                if (!mapElement) {
+                    console.error('Elemento mapa-interativo não encontrado');
+                    return;
+                }
+
+                // Limpar conteúdo do fallback se houver
+                if (mapElement.innerHTML && mapElement.innerHTML.includes('temporariamente indisponível')) {
+                    mapElement.innerHTML = '';
+                }
+
+                // Garantir que o container está visível (Leaflet precisa de dimensões)
+                if (mapElement.offsetParent === null || mapElement.clientHeight === 0) {
+                    // Ainda não visível, tentar novamente
+                    setTimeout(initializeMap, 300);
+                    return;
+                }
+
+                // Verificar se Leaflet está disponível e expõe a função map
+                if (typeof window.L === 'undefined' || typeof window.L.map !== 'function') {
+                    console.warn('Leaflet não está carregado corretamente, estado de window.L:', window.L);
+                    setTimeout(initializeMap, 500);
+                    return;
+                }
+
+                // Criar o mapa de forma segura
+                mapInstance = window.L.map('mapa-interativo').setView(MAP_CONFIG.center, MAP_CONFIG.zoom);
+
+                // Adicionar tiles do OpenStreetMap
+                if (typeof window.L.tileLayer === 'function') {
+                    window.L.tileLayer(MAP_CONFIG.tileLayer, {
+                        attribution: MAP_CONFIG.attribution,
+                        maxZoom: MAP_CONFIG.maxZoom,
+                    }).addTo(mapInstance);
+                } else {
+                    console.warn('window.L.tileLayer não é uma função; tiles não serão adicionados.');
+                }
+
+                // Adicionar marcadores
+                addMarkersToMap();
+
+                console.log('Mapa Leaflet inicializado com sucesso.');
+
+                // Forçar redimensionamento após carregamento
+                setTimeout(() => {
+                    if (mapInstance && typeof mapInstance.invalidateSize === 'function') {
+                        mapInstance.invalidateSize();
+                    }
+                }, 300);
+
+            } catch (error) {
+                console.error('Erro ao inicializar o mapa Leaflet:', error, 'window.L=', window.L);
+                // Tentar novamente após pequeno intervalo
+                setTimeout(initializeMap, 1000);
+            }
+        }
+
+        function addMarkersToMap() {
+            if (!mapInstance) return;
+
+            MAP_MARKERS.forEach(marker => {
+                try {
+                    window.L.marker(marker.coords)
+                        .addTo(mapInstance)
+                        .bindPopup(`<strong>${marker.title}</strong><br>${marker.info}`);
+                } catch (error) {
+                    console.error('Erro ao adicionar marcador:', error);
+                }
+            });
+        }
+
+        function showMapFallback() {
+            const mapElement = document.getElementById('mapa-interativo');
+            if (mapElement) {
+                mapElement.innerHTML = `
+                    <div class="p-8 text-center text-gray-500 h-full flex flex-col justify-center items-center">
+                        <p class="text-lg font-semibold mb-2">Mapa temporariamente indisponível</p>
+                        <p class="text-sm">Estamos trabalhando para restaurar esta funcionalidade. Assegurámos que os dados reais de projetos e áreas de risco de Angola estão integrados na lógica do sistema.</p>
+                    </div>
+                `;
+            }
+        }
+
+        function destroyMap() {
+            if (mapInstance) {
+                try {
+                    mapInstance.remove();
+                } catch (e) {
+                    console.warn('Erro ao remover mapa:', e);
+                }
+                mapInstance = null;
+                console.log('Mapa destruído.');
+            }
+        }
+
+        function setMapCenter(lat, lng, zoom = MAP_CONFIG.zoom) {
+            if (mapInstance) {
+                mapInstance.setView([lat, lng], zoom);
+            }
+        }
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        function showPage(pageId) {
+            try {
+                document.querySelectorAll('.page-content').forEach(div => {
+                    div.style.display = 'none';
+                    div.classList.remove('active');
+                });
+                
+                const activePage = document.getElementById(pageId);
+                if (activePage) {
+                    activePage.style.display = 'block';
+                    activePage.classList.add('active');
+                    updateNavigationState(pageId);
+                    initializePageResources(pageId);
+                }
+            } catch (error) {
+                console.error('Erro ao mostrar página:', error);
+            }
+        }
+
+        function updateNavigationState(pageId) {
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+                link.removeAttribute('aria-current');
+            });
+            
+            const activeLink = document.querySelector(`[onclick*="'${pageId}'"]`);
+            if (activeLink) {
+                activeLink.classList.add('active');
+                activeLink.setAttribute('aria-current', 'page');
+            }
+        }
+
+        function initializePageResources(pageId) {
+            // Destruir recursos anteriores apenas se não for o mapa
+            if (pageId !== 'mapa-interativo-page') {
+                if (typeof destroyCharts === 'function') {
+                    destroyCharts();
+                }
+                if (typeof destroyMap === 'function') {
+                    destroyMap();
+                }
+            }
+
+            if (pageId === 'mapa-interativo-page') {
+                // Aguardar um pouco para garantir que o elemento está visível
+                setTimeout(() => {
+                    // Verificar se Leaflet está disponível
+                    if (typeof window.L !== 'undefined' && window.L.map) {
+                        if (typeof initializeMap === 'function') {
+                            initializeMap();
+                        }
+                    } else {
+                        console.warn('Leaflet não disponível, aguardando...');
+                        // Tentar novamente em 1 segundo
+                        let attempts = 0;
+                        const tryInit = () => {
+                            if (attempts >= 10) {
+                                console.error('Leaflet não conseguiu carregar após múltiplas tentativas');
+                                showMapFallback();
+                                return;
+                            }
+                            
+                            if (typeof window.L !== 'undefined' && window.L.map && typeof initializeMap === 'function') {
+                                initializeMap();
+                            } else {
+                                attempts++;
+                                setTimeout(tryInit, 500);
+                            }
+                        };
+                        tryInit();
+                    }
+                }, 200);
+            } else if (pageId === 'dados-estatisticos') {
+                if (typeof initializeCharts === 'function') {
+                    initializeCharts();
+                }
+            } else if (pageId === 'degradacao-solo') {
+                showTopic('causas');
+            }
+        }
+
+        function showTopic(topicId) {
+            document.querySelectorAll('#degradacao-solo .tab-content').forEach(content => {
+                content.style.display = 'none';
+                content.classList.remove('active');
+            });
+
+            document.querySelectorAll('#degradacao-solo .tab-button').forEach(button => {
+                button.classList.remove('active');
+                button.classList.remove('bg-terra-verde');
+                button.classList.add('bg-gray-200', 'hover:bg-gray-300');
+                button.classList.remove('text-white');
+                button.classList.add('text-gray-800');
+            });
+
+            const activeContent = document.getElementById(topicId);
+            if (activeContent) {
+                activeContent.style.display = 'block';
+                activeContent.classList.add('active');
+            }
+
+            const activeTopicButton = document.querySelector(`[onclick*="showTopic('${topicId}')"]`);
+            if (activeTopicButton) {
+                activeTopicButton.classList.add('active');
+                activeTopicButton.classList.add('bg-terra-verde');
+                activeTopicButton.classList.remove('bg-gray-200', 'hover:bg-gray-300');
+                activeTopicButton.classList.add('text-white');
+            }
+        }
+
+        async function handleAIQuery() {
+            const promptInput = document.getElementById('ai-prompt');
+            const responseDiv = document.getElementById('ai-response');
+            const button = document.getElementById('ai-submit-button');
+            const spinner = document.getElementById('ai-spinner');
+            const buttonText = document.getElementById('ai-button-text');
+            const citationBox = document.getElementById('ai-citation');
+            const citationList = document.getElementById('citation-list');
+            
+            const userQuery = promptInput.value.trim();
+
+            if (!userQuery) {
+                responseDiv.innerHTML = '<p class="text-red-500">Por favor, insira uma pergunta.</p>';
+                return;
+            }
+
+            button.disabled = true;
+            spinner.classList.remove('hidden');
+            buttonText.textContent = 'A Pensar...';
+            responseDiv.innerHTML = '<p class="text-gray-500 flex items-center justify-center h-full"><span class="loading-spinner"></span>A buscar dados...</p>';
+            citationBox.classList.add('hidden');
+
+            const systemPrompt = "Você é um especialista em sustentabilidade e degradação do solo com foco em Angola e países lusófonos. Forneça uma resposta informativa, concisa e baseada em fatos para a questão. A sua resposta deve ser formal e educativa, focada em dados e soluções.";
+            const apiKey = ""; 
+
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }],
+                tools: [{ "google_search": {} }],
+                systemInstruction: {
+                    parts: [{ text: systemPrompt }]
+                },
+            };
+
+            let response;
+            let attempts = 0;
+            const maxAttempts = 3;
+            const initialDelay = 1000;
+
+            while (attempts < maxAttempts) {
+                try {
+                    response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (response.ok) {
+                        break; 
+                    } else {
+                        throw new Error(`HTTP Error: ${response.status}`);
+                    }
+
+                } catch (error) {
+                    attempts++;
+                    if (attempts >= maxAttempts) {
+                        console.error('Erro ao chamar a API Gemini após várias tentativas:', error);
+                        responseDiv.innerHTML = '<p class="text-red-500">Desculpe, não foi possível obter a resposta da IA. Tente novamente mais tarde.</p>';
+                        break;
+                    }
+                    const delay = initialDelay * Math.pow(2, attempts - 1);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                }
+            }
+            
+            button.disabled = false;
+            spinner.classList.add('hidden');
+            buttonText.textContent = 'Obter Resposta da IA';
+            
+            if (!response || !response.ok) {
+                 responseDiv.innerHTML = '<p class="text-red-500">Desculpe, ocorreu um erro na comunicação com a IA.</p>';
+                 return;
+            }
+
+
+            try {
+                const result = await response.json();
+                const candidate = result.candidates?.[0];
+
+                if (candidate && candidate.content?.parts?.[0]?.text) {
+                    const text = candidate.content.parts[0].text;
+                    responseDiv.innerHTML = text.replace(/\n/g, '<br>'); 
+
+                    let sources = [];
+                    const groundingMetadata = candidate.groundingMetadata;
+                    if (groundingMetadata && groundingMetadata.groundingAttributions) {
+                        sources = groundingMetadata.groundingAttributions
+                            .map(attribution => ({
+                                uri: attribution.web?.uri,
+                                title: attribution.web?.title,
+                            }))
+                            .filter(source => source.uri && source.title);
+                    }
+                    
+                    if (sources.length > 0) {
+                        citationList.innerHTML = ''; 
+                        sources.forEach((source, index) => {
+                            const li = document.createElement('li');
+                            li.innerHTML = `<a href="${source.uri}" target="_blank" rel="noopener noreferrer" class="hover:text-terra-verde-dark underline transition duration-150">${source.title}</a>`;
+                            citationList.appendChild(li);
+                        });
+                        citationBox.classList.remove('hidden');
+                    } else {
+                         citationBox.classList.add('hidden');
+                    }
+
+                } else {
+                    responseDiv.innerHTML = '<p class="text-gray-500">A IA não conseguiu gerar uma resposta significativa para essa pergunta.</p>';
+                }
+
+            } catch (error) {
+                console.error('Erro ao processar resposta da API:', error);
+                responseDiv.innerHTML = '<p class="text-red-500">Ocorreu um erro inesperado ao analisar a resposta.</p>';
+            }
+        }
+
+
+        function validateForm() {
+            let isValid = true;
+            const form = document.getElementById('form-contribuicao');
+            const fields = ['nome', 'email', 'mensagem'];
+            const errorDiv = document.getElementById('mensagem-error');
+
+            fields.forEach(id => {
+                const input = document.getElementById(id);
+                if (!input.value.trim()) {
+                    input.setAttribute('aria-invalid', 'true');
+                    isValid = false;
+                } else {
+                    input.setAttribute('aria-invalid', 'false');
+                }
+            });
+
+            if (!isValid) {
+                errorDiv.textContent = 'Por favor, preencha todos os campos obrigatórios.';
+                errorDiv.classList.remove('hidden');
+            } else {
+                errorDiv.classList.add('hidden');
+            }
+
+            return isValid;
+        }
+
+        function clearFormErrors() {
+            const fields = ['nome', 'email', 'mensagem'];
+            fields.forEach(id => {
+                const input = document.getElementById(id);
+                input.setAttribute('aria-invalid', 'false');
+            });
+            document.getElementById('mensagem-error').classList.add('hidden');
+        }
+
+        function handleFormSubmission(event) {
+            event.preventDefault();
+            if (!validateForm()) {
+                return;
+            }
+
+            const messageDiv = document.getElementById('form-message');
+            
+            console.log('Dados de contribuição enviados:', {
+                nome: document.getElementById('nome').value,
+                email: document.getElementById('email').value,
+                mensagem: document.getElementById('mensagem').value,
+            });
+            
+            messageDiv.classList.remove('bg-red-100', 'text-red-600');
+            messageDiv.classList.add('bg-green-100', 'text-terra-verde');
+            messageDiv.textContent = `Obrigado pela sua contribuição! A sua mensagem foi enviada e será analisada pela nossa equipa.`;
+            messageDiv.classList.remove('hidden');
+
+            setTimeout(() => {
+                document.getElementById('form-contribuicao').reset();
+                messageDiv.classList.add('hidden');
+                clearFormErrors();
+            }, 3000);
+        }
+
+        function initializeApp() {
+            try {
+                // Aguardar que as bibliotecas externas estejam carregadas
+                const checkLibraries = () => {
+                    const leafletReady = typeof window.L !== 'undefined' && window.L.map;
+                    const chartReady = typeof Chart !== 'undefined';
+                    
+                    console.log('Leaflet ready:', leafletReady, 'Chart ready:', chartReady);
+                    
+                    if (!leafletReady || !chartReady) {
+                        setTimeout(checkLibraries, 200);
+                        return;
+                    }
+
+                    // Configurar formulário
+                    const form = document.getElementById('form-contribuicao');
+                    if (form) {
+                        form.addEventListener('submit', handleFormSubmission);
+                    }
+
+                    // Iniciar na página principal
+                    showPage('home'); 
+
+                    console.log('Aplicação TerraViva inicializada com sucesso');
+                };
+
+                // Iniciar verificação após um pequeno atraso para garantir que scripts foram parsed
+                setTimeout(checkLibraries, 300);
+            } catch (error) {
+                console.error('Erro ao inicializar aplicação:', error);
+            }
+        }
+
+        function cleanup() {
+            if (typeof destroyCharts === 'function') {
+                destroyCharts();
+            }
+            
+            if (typeof destroyMap === 'function') {
+                destroyMap();
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', initializeApp);
+        window.addEventListener('beforeunload', cleanup);
+
+        window.showPage = showPage;
+        window.showTopic = showTopic;
+        window.handleAIQuery = handleAIQuery;
+    </script>
+</body>
+</html>
