@@ -46,7 +46,38 @@
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
     
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/SVRKdeZPdI+4rf8dE=" crossorigin=""/>
+    <!-- Prefer local Leaflet in /vendor/leaflet; fall back to CDN. Loaded synchronously. -->
+    <link rel="stylesheet" href="/vendor/leaflet/leaflet.css">
+    <script>
+        (function(){
+            var localJs = '/vendor/leaflet/leaflet.js';
+            var cdnJs = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+
+            try {
+                // Synchronous attempt: write a script tag for the local file.
+                document.write('<script src="' + localJs + '"><\/script>');
+            } catch (e) {
+                // If document.write is not allowed, fall back to dynamic load.
+                var s = document.createElement('script');
+                s.src = localJs;
+                document.head.appendChild(s);
+            }
+
+            // If Leaflet didn't load synchronously (local missing), load CDN synchronously as well.
+            if (typeof window.L === 'undefined') {
+                try {
+                    document.write('<script>console.warn("Local Leaflet failed; loading CDN synchronously.");<\/script>');
+                    document.write('<script src="' + cdnJs + '"><\/script>');
+                } catch (e) {
+                    var s2 = document.createElement('script');
+                    s2.src = cdnJs;
+                    document.head.appendChild(s2);
+                }
+            } else {
+                console.log('Leaflet appears loaded (local vendor).');
+            }
+        })();
+    </script>
 
     <style>
         :root {
@@ -414,8 +445,9 @@
         </div>
     </footer>
     
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20n6aRzXy34iH0oYDFzG6v1+9w4z3W2Hk6S6f8P4jD0=" crossorigin=""></script>
+    <!-- Leaflet is loaded dynamically earlier (local vendor preferred, CDN fallback) -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_KEY&callback=initGoogleMaps" async defer></script>
 
     <script type="module">
         let chartDegradacaoInstance = null;
@@ -435,7 +467,7 @@
                 colors: ['#2980B9', '#8E44AD']
             },
             desertificacao: {
-                labels: ['Cunene', 'Huíla', 'Namibe', 'Cuando Cubango', 'Benguela'],
+                labels: ['Cunene', 'Huíla', 'Namibe', 'Quando Cubango', 'Benguela'],
                 data: [75, 55, 60, 45, 30],
                 colors: ['#E74C3C', '#E67E22', '#F1C40F', '#1ABC9C', '#3498DB']
             },
@@ -630,7 +662,7 @@
             zoom: 5,
             maxZoom: 18,
             tileLayer: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-            attribution: '© OpenStreetMap contributors'
+            attribution: 'Leaflet | © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>'
         };
 
         // Dados de projetos para exibição alternativa
@@ -781,8 +813,11 @@
                     return;
                 }
 
-                // Criar o mapa de forma segura
-                mapInstance = window.L.map('mapa-interativo').setView(MAP_CONFIG.center, MAP_CONFIG.zoom);
+                // Criar o mapa de forma segura (com controlos explícitos)
+                mapInstance = window.L.map('mapa-interativo', {
+                    zoomControl: true,
+                    attributionControl: true
+                }).setView(MAP_CONFIG.center, MAP_CONFIG.zoom);
 
                 // Adicionar tiles do OpenStreetMap
                 if (typeof window.L.tileLayer === 'function') {
@@ -857,6 +892,46 @@
             }
         }
 
+        // Try to initialize the map immediately with retries when the Projects page becomes active.
+        function tryInitializeMapImmediate(maxAttempts = 20, interval = 400) {
+            let tries = 0;
+            const attempt = () => {
+                tries++;
+                console.log('tryInitializeMapImmediate attempt', tries);
+
+                // If Google Maps is present and has an initializer, prefer it
+                if (typeof window.google !== 'undefined' && window.google.maps && typeof initializeGoogleMap === 'function') {
+                    try {
+                        initializeGoogleMap();
+                        console.log('initializeGoogleMap called by tryInitializeMapImmediate');
+                        return;
+                    } catch (e) {
+                        console.warn('initializeGoogleMap threw:', e);
+                    }
+                }
+
+                // If Leaflet is present, call initializeMap
+                if (typeof window.L !== 'undefined' && typeof initializeMap === 'function') {
+                    try {
+                        initializeMap();
+                        console.log('initializeMap called by tryInitializeMapImmediate');
+                        return;
+                    } catch (e) {
+                        console.warn('initializeMap threw:', e);
+                    }
+                }
+
+                if (tries >= maxAttempts) {
+                    console.error('tryInitializeMapImmediate: não foi possível inicializar o mapa após', tries, 'tentativas');
+                    showMapFallback();
+                    return;
+                }
+
+                setTimeout(attempt, interval);
+            };
+            attempt();
+        }
+
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
@@ -874,6 +949,11 @@
                     activePage.classList.add('active');
                     updateNavigationState(pageId);
                     initializePageResources(pageId);
+
+                    // Extra resilience: try to initialize map immediately when the Projects page is shown.
+                    if (pageId === 'mapa-interativo-page') {
+                        tryInitializeMapImmediate();
+                    }
                 }
             } catch (error) {
                 console.error('Erro ao mostrar página:', error);
@@ -907,31 +987,49 @@
             if (pageId === 'mapa-interativo-page') {
                 // Aguardar um pouco para garantir que o elemento está visível
                 setTimeout(() => {
-                    // Verificar se Leaflet está disponível
-                    if (typeof window.L !== 'undefined' && window.L.map) {
-                        if (typeof initializeMap === 'function') {
-                            initializeMap();
-                        }
-                    } else {
-                        console.warn('Leaflet não disponível, aguardando...');
-                        // Tentar novamente em 1 segundo
-                        let attempts = 0;
-                        const tryInit = () => {
-                            if (attempts >= 10) {
-                                console.error('Leaflet não conseguiu carregar após múltiplas tentativas');
-                                showMapFallback();
-                                return;
+                        // Prefer Google Maps if available, otherwise Leaflet
+                        const tryInitBoth = () => {
+                            // If Google Maps is available
+                            if (typeof window.google !== 'undefined' && window.google.maps) {
+                                if (typeof initializeGoogleMap === 'function') {
+                                    initializeGoogleMap();
+                                    return;
+                                }
                             }
-                            
-                            if (typeof window.L !== 'undefined' && window.L.map && typeof initializeMap === 'function') {
-                                initializeMap();
-                            } else {
+
+                            // Fallback to Leaflet
+                            if (typeof window.L !== 'undefined' && window.L.map) {
+                                if (typeof initializeMap === 'function') {
+                                    initializeMap();
+                                    return;
+                                }
+                            }
+
+                            // Neither available yet; retry with attempts
+                            console.warn('Google Maps / Leaflet não disponível, aguardando...');
+                            let attempts = 0;
+                            const tryInit = () => {
+                                if (typeof window.google !== 'undefined' && window.google.maps && typeof initializeGoogleMap === 'function') {
+                                    initializeGoogleMap();
+                                    return;
+                                }
+
+                                if (typeof window.L !== 'undefined' && window.L.map && typeof initializeMap === 'function') {
+                                    initializeMap();
+                                    return;
+                                }
+
+                                if (attempts >= 10) {
+                                    console.error('Google Maps / Leaflet não conseguiram carregar após múltiplas tentativas');
+                                    showMapFallback();
+                                    return;
+                                }
                                 attempts++;
                                 setTimeout(tryInit, 500);
-                            }
+                            };
+                            tryInit();
                         };
-                        tryInit();
-                    }
+                        tryInitBoth();
                 }, 200);
             } else if (pageId === 'dados-estatisticos') {
                 if (typeof initializeCharts === 'function') {
@@ -1199,6 +1297,13 @@
         window.showPage = showPage;
         window.showTopic = showTopic;
         window.handleAIQuery = handleAIQuery;
+        // Expose map helpers for console/testing and external callbacks
+        window.initializeMap = typeof initializeMap === 'function' ? initializeMap : undefined;
+        window.destroyMap = typeof destroyMap === 'function' ? destroyMap : undefined;
+        window.tryInitializeMapImmediate = typeof tryInitializeMapImmediate === 'function' ? tryInitializeMapImmediate : undefined;
+        if (typeof initializeGoogleMap === 'function') {
+            window.initializeGoogleMap = initializeGoogleMap;
+        }
     </script>
 </body>
 </html>
